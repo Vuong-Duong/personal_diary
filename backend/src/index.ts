@@ -2,6 +2,8 @@ import express from "express";
 import http from "http";
 import cors from "cors";
 import dotenv from "dotenv";
+import authRoutes from "./routes/auth.routes";
+import mongoose from "mongoose";
 import bodyParser from "body-parser";
 import path from "path";
 
@@ -37,7 +39,8 @@ app.use(
   "/uploads",
   express.static(path.join(__dirname, "uploads"))
 );
-
+//auth
+app.use("/api/auth", authRoutes);
 //    API PREFIX
 app.use("/api", require("./routes")); // bạn gắn router ở đây
 
@@ -47,3 +50,5 @@ const port = process.env.PORT || 8000;
 server.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
+
+
