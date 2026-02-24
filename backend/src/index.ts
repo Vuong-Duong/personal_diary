@@ -6,6 +6,7 @@ import authRoutes from "./routes/auth.routes";
 import mongoose from "mongoose";
 import bodyParser from "body-parser";
 import path from "path";
+import { connectDB } from "./config/db";
 
 dotenv.config();
 
@@ -39,11 +40,18 @@ app.use(
   "/uploads",
   express.static(path.join(__dirname, "uploads"))
 );
-//auth
-app.use("/api/auth", authRoutes);
-//    API PREFIX
-app.use("/api", require("./routes")); // bạn gắn router ở đây
 
+//    DATABASE CONNECTION
+connectDB();
+
+//    ROUTES
+app.use("/api/auth", authRoutes);
+app.use("/api", require("./routes"));
+
+//    ERROR HANDLING (404)
+app.use((req, res) => {
+  res.status(404).json({ message: "Route not found" });
+});
 
 //    START SERVER
 const port = process.env.PORT || 8000;
