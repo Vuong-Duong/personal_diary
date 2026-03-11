@@ -7,7 +7,7 @@ import {
   getTopPosts,
   getTrendingPosts,
   updatePostScore,
-} from "../controllers/PostStats.controller";
+} from "../controllers/postStats.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
 import { requireRole } from "../middlewares/role.middlewares";
 

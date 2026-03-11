@@ -1,14 +1,15 @@
+import dotenv from "dotenv";
+dotenv.config();
 import express from "express";
 import http from "http";
 import cors from "cors";
-import dotenv from "dotenv";
 import authRoutes from "./routes/auth.routes";
 import mongoose from "mongoose";
 import bodyParser from "body-parser";
 import path from "path";
 import { connectDB } from "./config/db";
 
-dotenv.config();
+
 
 const app = express();
 const server = http.createServer(app);
@@ -32,13 +33,6 @@ app.use(
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "Accept"],
   })
-);
-
-
-//    STATIC FILES
-app.use(
-  "/uploads",
-  express.static(path.join(__dirname, "uploads"))
 );
 
 //    DATABASE CONNECTION
