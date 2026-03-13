@@ -9,11 +9,11 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}) {
   let contentTypeHeader = {};
   if (
     options.body &&
-    typeof options.body === 'string' &&
-    (!options.headers || !('Content-Type' in options.headers)) &&
-    ["POST", "PUT", "PATCH"].includes((options.method || '').toUpperCase())
+    typeof options.body === "string" &&
+    (!options.headers || !("Content-Type" in options.headers)) &&
+    ["POST", "PUT", "PATCH"].includes((options.method || "").toUpperCase())
   ) {
-    contentTypeHeader = { 'Content-Type': 'application/json' };
+    contentTypeHeader = { "Content-Type": "application/json" };
   }
 
   const headers = {
@@ -29,9 +29,14 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}) {
     headers,
   });
 
-  if (response.status === 204 || response.headers.get("content-length") === "0") {
+  if (
+    response.status === 204 ||
+    response.headers.get("content-length") === "0"
+  ) {
     if (!response.ok) {
-      const error: any = new Error("Request failed with status " + response.status);
+      const error: any = new Error(
+        "Request failed with status " + response.status,
+      );
       error.status = response.status;
       throw error;
     }
@@ -58,6 +63,14 @@ export async function fetchWithoutAuth(url: string, options: RequestInit = {}) {
   };
 
   const fullUrl = `${API_URL}${url}`;
+  console.log(
+    "fetchWithoutAuth - fullUrl:",
+    fullUrl,
+    "API_URL:",
+    API_URL,
+    "url:",
+    url,
+  );
 
   const response = await fetch(fullUrl, {
     ...options,

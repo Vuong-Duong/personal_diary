@@ -1,10 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Trash2, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import {
     AlertDialog,
     AlertDialogAction,
@@ -14,57 +13,114 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { getUserIdFromToken } from '@/api/user.api'
+import { deletePost, updatePost, getUserPosts } from '@/api/post.api'
+import type { Post } from '@/types'
+import { useToast } from '@/hooks/use-toast'
 
-interface PrivatePost {
-    id: string
-    title: string
-    content: string
-    visibility: 'PRIVATE' | 'PUBLIC'
-    createdAt: Date
+interface PrivatePost extends Post {
+    createdAt: string
 }
 
-// Mock data
-const MOCK_PRIVATE_POSTS: PrivatePost[] = [
-    {
-        id: '1',
-        title: 'Bài viết cá nhân #1',
-        content: 'Đây là bài viết riêng tư của tôi. Chỉ mình tôi có thể nhìn thấy.',
-        visibility: 'PRIVATE',
-        createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    },
-    {
-        id: '2',
-        title: 'Ý tưởng cho bài viết tiếp theo',
-        content: 'Tôi đang suy nghĩ về...',
-        visibility: 'PRIVATE',
-        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    },
-]
-
 export function PrivatePosts() {
-    const [posts, setPosts] = useState(MOCK_PRIVATE_POSTS)
+    const [posts, setPosts] = useState<PrivatePost[]>([])
     const [deleteId, setDeleteId] = useState<string | null>(null)
+    const [isLoading, setIsLoading] = useState(true)
+    const { toast } = useToast()
 
-    const handleDelete = (id: string) => {
-        setPosts(posts.filter((post) => post.id !== id))
-        setDeleteId(null)
-    }
+    useEffect(() => {
+        loadPrivatePosts()
+    }, [])
 
-    const handleToggleVisibility = (id: string) => {
-        setPosts(
-            posts.map((post) => {
-                if (post.id === id) {
-                    return {
-                        ...post,
-                        visibility: post.visibility === 'PRIVATE' ? 'PUBLIC' : 'PRIVATE',
-                    }
-                }
-                return post
+    const loadPrivatePosts = async () => {
+        try {
+            setIsLoading(true)
+            const userId = getUserIdFromToken()
+            if (!userId) {
+                toast({
+                    title: 'Lỗi',
+                    description: 'Vui lòng đăng nhập',
+                    variant: 'destructive',
+                })
+                return
+            }
+
+            const response = await getUserPosts(userId)
+            const allPosts = response.posts || []
+
+            // Filter only private posts
+            const privatePosts = allPosts.filter((post: any) =>
+                post.visibility === 'PRIVATE' || post.status === 'DRAFT'
+            )
+
+            setPosts(privatePosts)
+        } catch (error: any) {
+            toast({
+                title: 'Lỗi',
+                description: error.message || 'Không thể tải bài viết',
+                variant: 'destructive',
             })
-        )
+        } finally {
+            setIsLoading(false)
+        }
     }
 
-    const formatDate = (date: Date) => {
+    const handleDelete = async (id: string) => {
+        try {
+            await deletePost(id)
+            setPosts(posts.filter((post) => post.id !== id))
+            setDeleteId(null)
+
+            toast({
+                title: 'Thành công',
+                description: 'Bài viết đã được xóa',
+            })
+        } catch (error: any) {
+            toast({
+                title: 'Lỗi',
+                description: error.message || 'Không thể xóa bài viết',
+                variant: 'destructive',
+            })
+        }
+    }
+
+    const handleToggleVisibility = async (id: string) => {
+        const post = posts.find(p => p.id === id)
+        if (!post) return
+
+        try {
+            const newVisibility = post.visibility === 'PRIVATE' ? 'PUBLIC' : 'PRIVATE'
+            await updatePost(id, {
+                visibility: newVisibility as 'PRIVATE' | 'PUBLIC',
+            })
+
+            setPosts(
+                posts.map((p) => {
+                    if (p.id === id) {
+                        return {
+                            ...p,
+                            visibility: newVisibility as 'PRIVATE' | 'PUBLIC',
+                        }
+                    }
+                    return p
+                })
+            )
+
+            toast({
+                title: 'Thành công',
+                description: `Bài viết đã được đổi thành ${newVisibility === 'PRIVATE' ? 'riêng tư' : 'công khai'}`,
+            })
+        } catch (error: any) {
+            toast({
+                title: 'Lỗi',
+                description: error.message || 'Không thể cập nhật bài viết',
+                variant: 'destructive',
+            })
+        }
+    }
+
+    const formatDate = (dateString: string) => {
+        const date = new Date(dateString)
         return date.toLocaleDateString('vi-VN', {
             year: 'numeric',
             month: 'long',
@@ -86,7 +142,9 @@ export function PrivatePosts() {
                 </div>
 
                 {/* Posts List */}
-                {posts.length > 0 ? (
+                {isLoading ? (
+                    <p className="text-center text-muted-foreground">Đang tải bài viết...</p>
+                ) : posts.length > 0 ? (
                     <div className="space-y-4">
                         {posts.map((post) => (
                             <Card key={post.id} className="overflow-hidden bg-card">

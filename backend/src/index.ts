@@ -35,9 +35,6 @@ app.use(
   })
 );
 
-//    DATABASE CONNECTION
-connectDB();
-
 //    ROUTES
 app.use("/api/auth", authRoutes);
 app.use("/api", require("./routes"));
@@ -49,8 +46,18 @@ app.use((req, res) => {
 
 //    START SERVER
 const port = process.env.PORT || 8000;
-server.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+
+const startServer = async () => {
+  console.log("🚀 Starting server...");
+  await connectDB();
+  server.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}`);
+  });
+};
+
+startServer().catch((error) => {
+  console.error("Failed to start server:", error);
+  process.exit(1);
 });
 
 

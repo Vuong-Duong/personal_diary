@@ -1,28 +1,22 @@
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 export const showSuccessToast = (title: string, description?: string) => {
-  toast({
-    title,
+  toast.success(title, {
     description,
-    variant: "success",
     duration: 5000,
   });
 };
 
 export const showErrorToast = (title: string, description?: string) => {
-  toast({
-    title,
+  toast.error(title, {
     description,
-    variant: "destructive",
     duration: 5000,
   });
 };
 
 export const showInfoToast = (title: string, description?: string) => {
-  toast({
-    title,
+  toast.info(title, {
     description,
-    variant: "info",
     duration: 5000,
   });
 };

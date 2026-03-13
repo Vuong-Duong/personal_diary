@@ -12,6 +12,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import type { Post as PostType, Comment as CommentType } from '@/types'
 
 interface PostAuthor {
     id: string
@@ -24,34 +25,15 @@ interface PostStats {
     comments: number
 }
 
-interface Comment {
-    id: string
-    text: string
-    author: {
-        name: string
-        avatar: string
-    }
-    createdAt: Date
-}
-
-interface Post {
-    id: string
-    userId: string
-    title: string
-    content: string
-    visibility: string
-    isAnonymous: boolean
-    status: string
-    createdAt: Date
-    updatedAt: Date
+interface PostUIData extends PostType {
     author: PostAuthor
     stats: PostStats
     liked: boolean
-    comments: Comment[]
+    comments: CommentType[]
 }
 
 interface PostCardProps {
-    post: Post
+    post: PostUIData
     onLike: () => void
     onAddComment: (text: string) => void
 }
@@ -59,7 +41,8 @@ interface PostCardProps {
 export function PostCard({ post, onLike, onAddComment }: PostCardProps) {
     const [showComments, setShowComments] = useState(false)
 
-    const formatDate = (date: Date) => {
+    const formatDate = (dateString: string) => {
+        const date = new Date(dateString)
         const now = new Date()
         const diffMs = now.getTime() - date.getTime()
         const diffMins = Math.floor(diffMs / 60000)
@@ -96,9 +79,7 @@ export function PostCard({ post, onLike, onAddComment }: PostCardProps) {
                     <DropdownMenuContent align="end">
                         <DropdownMenuItem>Lưu bài viết</DropdownMenuItem>
                         <DropdownMenuItem>Ẩn bài viết</DropdownMenuItem>
-                        {post.userId === 'current-user' && (
-                            <DropdownMenuItem className="text-destructive">Xóa bài viết</DropdownMenuItem>
-                        )}
+                        <DropdownMenuItem className="text-destructive">Xóa bài viết</DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>
@@ -111,8 +92,8 @@ export function PostCard({ post, onLike, onAddComment }: PostCardProps) {
 
             {/* Stats */}
             <div className="border-t border-border px-4 py-3 flex items-center justify-between text-sm text-muted-foreground">
-                <span>{post.stats.likes} likes</span>
-                <span>{post.stats.comments} comments</span>
+                <span>{post.stats.likes} lượt thích</span>
+                <span>{post.stats.comments} bình luận</span>
             </div>
 
             {/* Actions */}
@@ -125,7 +106,7 @@ export function PostCard({ post, onLike, onAddComment }: PostCardProps) {
                     <Heart
                         className={`h-5 w-5 ${post.liked ? 'fill-destructive text-destructive' : ''}`}
                     />
-                    <span className={post.liked ? 'text-destructive' : ''}>Like</span>
+                    <span className={post.liked ? 'text-destructive' : ''}>Thích</span>
                 </Button>
                 <Button
                     variant="ghost"
@@ -133,11 +114,11 @@ export function PostCard({ post, onLike, onAddComment }: PostCardProps) {
                     onClick={() => setShowComments(!showComments)}
                 >
                     <MessageCircle className="h-5 w-5" />
-                    Comment
+                    Bình luận
                 </Button>
                 <Button variant="ghost" className="flex-1 gap-2 justify-center">
                     <Share2 className="h-5 w-5" />
-                    Share
+                    Chia sẻ
                 </Button>
             </div>
 
@@ -151,3 +132,4 @@ export function PostCard({ post, onLike, onAddComment }: PostCardProps) {
         </Card>
     )
 }
+

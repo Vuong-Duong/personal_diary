@@ -2,7 +2,6 @@ import { jwtDecode } from "jwt-decode";
 import { type NextRequest, NextResponse } from "next/server";
 
 const roleBasedPaths: { [key: string]: string[] } = {
-  "/home": ["user", "admin"],
   "/profile": ["user"],
   "/diaryPrivate": ["user"],
 

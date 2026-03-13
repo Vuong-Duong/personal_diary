@@ -130,8 +130,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [user, isLoading, login, register, logout, refreshUser]
   );
 
-  if (!isMounted) return null;
-
   return (
     <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );

@@ -32,7 +32,10 @@ export interface Comment {
   content: string;
   isAnonymous: boolean;
   createdAt: string;
-  updatedAt?: string;
+  author?: {
+    name: string;
+    avatar: string;
+  };
 }
 
 export interface PostStats {
@@ -61,6 +64,7 @@ export interface CreatePostRequest {
   content: string;
   visibility?: PostVisibility;
   isAnonymous?: boolean;
+  status?: PostStatus;
 }
 
 export interface UpdatePostRequest {
@@ -87,13 +91,13 @@ export interface UpdateUserRequest {
 }
 
 export interface ChangePasswordRequest {
-  currentPassword: string;
+  oldPassword: string;
   newPassword: string;
 }
 
 // Response DTOs
 export interface LoginResponse {
-  token: string;
+  access_token: string;
   user: User;
 }
 

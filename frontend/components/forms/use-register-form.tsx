@@ -3,12 +3,10 @@
 import { useAuth } from "@/providers/auth-provider";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { showErrorToast, showSuccessToast } from "@/utils/popUpUtils";
 
 interface RegisterFormData {
   email: string;
-  first_name: string;
-  last_name: string;
+  userName: string;
   password: string;
   confirmPassword: string;
 }
@@ -16,10 +14,8 @@ interface RegisterFormData {
 const messages = {
   title: "Tạo tài khoản",
   subtitle: "Đăng ký để bắt đầu",
-  firstName: "Tên",
-  firstNamePlaceholder: "Nhập tên của bạn",
-  lastName: "Họ",
-  lastNamePlaceholder: "Nhập họ của bạn",
+  namespace: "Tên đăng nhập",
+  userNamePlaceholder: "Nhập tên đăng nhập của bạn",
   email: "Email",
   emailPlaceholder: "Nhập email của bạn",
   password: "Mật khẩu",
@@ -49,7 +45,7 @@ const messages = {
 
 type CheckEmailFn = (email: string) => Promise<boolean>;
 
-const checkEmailExists: CheckEmailFn = async () => {
+const checkEmailExists: CheckEmailFn = async (email: string) => {
   try {
     // TODO: Replace bằng API kiểm tra email
     return false;
@@ -61,8 +57,7 @@ const checkEmailExists: CheckEmailFn = async () => {
 export function useRegisterForm() {
   const [formData, setFormData] = useState<RegisterFormData>({
     email: "",
-    first_name: "",
-    last_name: "",
+    userName: "",
     password: "",
     confirmPassword: "",
   });
@@ -73,7 +68,7 @@ export function useRegisterForm() {
   const [isSuccess, setIsSuccess] = useState(false);
 
   const router = useRouter();
-  const { register } = useAuth();
+  const { register, login } = useAuth();
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -83,66 +78,69 @@ export function useRegisterForm() {
   };
 
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
+    console.log("handleRegister triggered", e);
     e.preventDefault();
     setIsLoading(true);
     setMessage("");
     setIsSuccess(false);
 
-    const { email, first_name, last_name, password, confirmPassword } = formData;
+    const { email, userName, password, confirmPassword } = formData;
+    console.log("Form data:", { email, userName, password, confirmPassword });
 
-    if (!email || !first_name || !last_name || !password || !confirmPassword) {
-      showErrorToast(messages.requiredFields);
+    if (!email || !userName || !password || !confirmPassword) {
+      setMessage(messages.requiredFields);
       setIsLoading(false);
       return;
     }
 
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
     if (!emailRegex.test(email)) {
-      showErrorToast(messages.invalidEmail);
+      setMessage(messages.invalidEmail);
       setIsLoading(false);
       return;
     }
 
     if (await checkEmailExists(email)) {
-      showErrorToast("Email này đã được đăng ký!");
+      setMessage("Email này đã được đăng ký!");
       setIsLoading(false);
       return;
     }
 
     if (password.length < 8) {
-      showErrorToast(messages.passwordTooShort);
+      console.log("Password too short:", password.length);
+      setMessage(messages.passwordTooShort);
       setIsLoading(false);
       return;
     }
 
     if (password.length > 50) {
-      showErrorToast(messages.passwordTooLong);
-      setIsLoading(false);
-      return;
-    }
-
-    const passwordComplexityRegex = /(?=.*[0-9])(?=.*[!@#$%^&*(),.?":{}|<>])/;
-    if (!passwordComplexityRegex.test(password)) {
-      showErrorToast(messages.passwordComplexity);
+      console.log("Password too long:", password.length);
+      setMessage(messages.passwordTooLong);
       setIsLoading(false);
       return;
     }
 
     if (password !== confirmPassword) {
-      showErrorToast(messages.passwordMismatch);
+      setMessage(messages.passwordMismatch);
       setIsLoading(false);
       return;
     }
 
     try {
-      const fullName = `${first_name} ${last_name}`;
-      await register(fullName, email, password);
-      showSuccessToast(messages.registerSuccess, messages.checkEmail);
-      router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+      const fullName = formData.userName;
+      console.log("Calling register API with:", { fullName, email, password });
+      const response = await register(fullName, email, password);
+      console.log("Register response:", response);
+      setMessage(messages.registerSuccess);
+
+      // Auto-login sau khi register thành công
+      await login(email, password);
       setIsSuccess(true);
     } catch (error) {
+      console.error("Register error:", error);
       const msg = error instanceof Error ? error.message : messages.registerFailed;
-      showErrorToast(messages.registerFailed, msg);
+      console.error("Error message:", msg);
+      setMessage(`${messages.registerFailed}: ${msg}`);
     } finally {
       setIsLoading(false);
     }

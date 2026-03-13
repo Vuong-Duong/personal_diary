@@ -5,34 +5,32 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Send } from 'lucide-react'
-
-interface Comment {
-    id: string
-    text: string
-    author: {
-        name: string
-        avatar: string
-    }
-    createdAt: Date
-}
+import type { Comment as CommentType } from '@/types'
 
 interface CommentSectionProps {
-    comments: Comment[]
+    comments: CommentType[]
     onAddComment: (text: string) => void
 }
 
 export function CommentSection({ comments, onAddComment }: CommentSectionProps) {
     const [commentText, setCommentText] = useState('')
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         if (commentText.trim()) {
-            onAddComment(commentText)
-            setCommentText('')
+            setIsSubmitting(true)
+            try {
+                onAddComment(commentText)
+                setCommentText('')
+            } finally {
+                setIsSubmitting(false)
+            }
         }
     }
 
-    const formatDate = (date: Date) => {
+    const formatDate = (dateString: string) => {
+        const date = new Date(dateString)
         const now = new Date()
         const diffMs = now.getTime() - date.getTime()
         const diffMins = Math.floor(diffMs / 60000)
@@ -54,15 +52,15 @@ export function CommentSection({ comments, onAddComment }: CommentSectionProps) 
                     {comments.map((comment) => (
                         <div key={comment.id} className="flex gap-3">
                             <Avatar className="h-8 w-8">
-                                <AvatarImage src={comment.author.avatar} alt={comment.author.name} />
-                                <AvatarFallback>{comment.author.name.charAt(0)}</AvatarFallback>
+                                <AvatarImage src={comment.author?.avatar} alt={comment.author?.name} />
+                                <AvatarFallback>{comment.author?.name?.charAt(0) || 'A'}</AvatarFallback>
                             </Avatar>
                             <div className="flex-1">
                                 <div className="bg-muted rounded-lg px-3 py-2">
                                     <p className="font-semibold text-sm text-card-foreground">
-                                        {comment.author.name}
+                                        {comment.author?.name || 'Anonymous'}
                                     </p>
-                                    <p className="text-sm text-card-foreground">{comment.text}</p>
+                                    <p className="text-sm text-card-foreground">{comment.content}</p>
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-1">
                                     {formatDate(comment.createdAt)}
@@ -85,12 +83,13 @@ export function CommentSection({ comments, onAddComment }: CommentSectionProps) 
                         value={commentText}
                         onChange={(e) => setCommentText(e.target.value)}
                         className="bg-background"
+                        disabled={isSubmitting}
                     />
                     <Button
                         type="submit"
                         size="sm"
                         variant={commentText.trim() ? 'default' : 'ghost'}
-                        disabled={!commentText.trim()}
+                        disabled={!commentText.trim() || isSubmitting}
                     >
                         <Send className="h-4 w-4" />
                     </Button>

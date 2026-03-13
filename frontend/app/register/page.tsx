@@ -161,130 +161,119 @@ const LoginPrompt = styled.div`
 `
 
 export default function RegisterPage() {
-    const {
-        formData,
-        showPassword,
-        showConfirmPassword,
-        message,
-        isLoading,
-        isSuccess,
-        t,
-        handleInputChange,
-        handleRegister,
-        setShowPassword,
-        setShowConfirmPassword
-    } = useRegisterForm()
+  const {
+    formData,
+    showPassword,
+    showConfirmPassword,
+    message,
+    isLoading,
+    isSuccess,
+    t,
+    handleInputChange,
+    handleRegister,
+    setShowPassword,
+    setShowConfirmPassword
+  } = useRegisterForm()
 
-    return (
-        <RegisterWrapper>
-            <RegisterContainer>
-                <LogoSide>
-                    <ImageWrapper>
-                        <Image
-                            src="https://static.vecteezy.com/system/resources/previews/006/549/272/original/diary-life-or-story-life-logo-quill-signature-feather-pen-ink-logo-symbol-free-vector.jpg"
-                            alt="Logo"
-                            fill
-                            style={{ objectFit: "contain" }}
-                            priority
-                        />
-                    </ImageWrapper>
-                </LogoSide>
-                <FormSide>
-                    <RegisterForm onSubmit={handleRegister}>
-                        <Title>{t.title}</Title>
-                        {!isSuccess && (
-                            <>
-                                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                                    <Label>{t.firstName}</Label>
-                                    <Input
-                                        id="first_name"
-                                        type="text"
-                                        placeholder={t.firstNamePlaceholder}
-                                        value={formData.first_name}
-                                        onChange={handleInputChange}
-                                        required
-                                        style={{ backgroundColor: "#f5f5f5" }}
-                                    />
-                                </div>
-                                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                                    <Label>{t.lastName}</Label>
-                                    <Input
-                                        id="last_name"
-                                        type="text"
-                                        placeholder={t.lastNamePlaceholder}
-                                        value={formData.last_name}
-                                        onChange={handleInputChange}
-                                        required
-                                        style={{ backgroundColor: "#f5f5f5" }}
-                                    />
-                                </div>
-                                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                                    <Label>{t.email}</Label>
-                                    <Input
-                                        id="email"
-                                        type="email"
-                                        placeholder={t.emailPlaceholder}
-                                        value={formData.email}
-                                        onChange={handleInputChange}
-                                        required
-                                        style={{ backgroundColor: "#f5f5f5" }}
-                                    />
-                                </div>
-                                <PasswordWrapper>
-                                    <Label>{t.password}</Label>
-                                    <div style={{ position: "relative" }}>
-                                        <Input
-                                            id="password"
-                                            type={showPassword ? "text" : "password"}
-                                            placeholder={t.passwordPlaceholder}
-                                            value={formData.password}
-                                            onChange={handleInputChange}
-                                            required
-                                            style={{ backgroundColor: "#f5f5f5" }}
-                                        />
-                                        <EyeIcon onClick={() => setShowPassword(!showPassword)}>
-                                            {showPassword ? <FaEyeSlash /> : <FaEye />}
-                                        </EyeIcon>
-                                    </div>
-                                </PasswordWrapper>
-                                <PasswordWrapper>
-                                    <Label>{t.confirmPassword}</Label>
-                                    <div style={{ position: "relative" }}>
-                                        <Input
-                                            id="confirmPassword"
-                                            type={showConfirmPassword ? "text" : "password"}
-                                            placeholder={t.confirmPasswordPlaceholder}
-                                            value={formData.confirmPassword}
-                                            onChange={handleInputChange}
-                                            required
-                                            style={{ backgroundColor: "#f5f5f5" }}
-                                        />
-                                        <EyeIcon onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
-                                            {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
-                                        </EyeIcon>
-                                    </div>
-                                </PasswordWrapper>
-                                <SubmitButton type="submit" disabled={isLoading}>
-                                    {isLoading ? (
-                                        <LoadingSpinner />
-                                    ) : (
-                                        t.registerButton
-                                    )}
-                                </SubmitButton>
-                            </>
-                        )}
-                        {message && (
-                            <Message $success={isSuccess}>{message}</Message>
-                        )}
-                    </RegisterForm>
-                    {!isSuccess && (
-                        <LoginPrompt>
-                            <span>{t.haveAccount}</span>
-                            <Link href="/login">{t.loginLink}</Link>
-                        </LoginPrompt>
-                    )}
-                </FormSide>
-            </RegisterContainer>
-        </RegisterWrapper>
-    )
+  return (
+    <RegisterWrapper>
+      <RegisterContainer>
+        <LogoSide>
+          <ImageWrapper>
+            <Image
+              src="https://static.vecteezy.com/system/resources/previews/006/549/272/original/diary-life-or-story-life-logo-quill-signature-feather-pen-ink-logo-symbol-free-vector.jpg"
+              alt="Logo"
+              fill
+              style={{ objectFit: "contain" }}
+              priority
+            />
+          </ImageWrapper>
+        </LogoSide>
+        <FormSide>
+          <RegisterForm onSubmit={handleRegister}>
+            <Title>{t.title}</Title>
+            {!isSuccess && (
+              <>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <Label>{t.namespace}</Label>
+                  <Input
+                    id="userName"
+                    type="text"
+                    placeholder={t.userNamePlaceholder}
+                    value={formData.userName}
+                    onChange={handleInputChange}
+                    required
+                    style={{ backgroundColor: "#f5f5f5" }}
+                  />
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <Label>{t.email}</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder={t.emailPlaceholder}
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    required
+                    style={{ backgroundColor: "#f5f5f5" }}
+                  />
+                </div>
+                <PasswordWrapper>
+                  <Label>{t.password}</Label>
+                  <div style={{ position: "relative" }}>
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder={t.passwordPlaceholder}
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      required
+                      style={{ backgroundColor: "#f5f5f5" }}
+                    />
+                    <EyeIcon onClick={() => setShowPassword(!showPassword)}>
+                      {showPassword ? <FaEyeSlash /> : <FaEye />}
+                    </EyeIcon>
+                  </div>
+                </PasswordWrapper>
+                <PasswordWrapper>
+                  <Label>{t.confirmPassword}</Label>
+                  <div style={{ position: "relative" }}>
+                    <Input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder={t.confirmPasswordPlaceholder}
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
+                      required
+                      style={{ backgroundColor: "#f5f5f5" }}
+                    />
+                    <EyeIcon onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                      {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                    </EyeIcon>
+                  </div>
+                </PasswordWrapper>
+                <SubmitButton type="submit" disabled={isLoading}>
+                  {isLoading ? (
+                    <LoadingSpinner />
+                  ) : (
+                    t.registerButton
+                  )}
+                </SubmitButton>
+              </>
+            )}
+            {message && (
+              <Message $success={isSuccess}>{message}</Message>
+            )}
+          </RegisterForm>
+          {!isSuccess && (
+            <LoginPrompt>
+              <span>{t.haveAccount}</span>
+              <Link href="/login">{t.loginLink}</Link>
+            </LoginPrompt>
+          )}
+        </FormSide>
+      </RegisterContainer>
+    </RegisterWrapper>
+  )
 }

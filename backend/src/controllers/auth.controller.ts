@@ -44,7 +44,7 @@ export const login = async (req: Request, res: Response) => {
 
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     // Sử dụng method comparePassword từ model
@@ -53,13 +53,13 @@ export const login = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    const token = signToken({
+    const access_token = signToken({
       userId: user._id,
       role: user.role,
     });
 
     res.json({
-      token,
+      access_token,
       user: {
         id: user._id,
         name: user.name,
