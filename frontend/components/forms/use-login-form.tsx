@@ -1,6 +1,7 @@
 "use client";
 
 import { API_ENDPOINTS, API_URL as BASE_API_URL } from "@/api/apiConfig";
+import { setAccessToken } from "@/api/apiClient";
 import { useToast } from "@/components/ui/use-toast";
 import { DecodedToken } from "@/proxy";
 import { useAuth } from "@/providers/auth-provider";
@@ -77,19 +78,7 @@ export function useLoginForm(allowedRoles?: string[]) {
       throw new Error("UNAUTHORIZED_ROLE");
     }
 
-    const cookieParts = [
-      `token=${access_token}`,
-      "path=/",
-      "max-age=3600",
-      "SameSite=Lax",
-    ];
-    if (
-      typeof window !== "undefined" &&
-      window.location.protocol === "https:"
-    ) {
-      cookieParts.push("Secure");
-    }
-    document.cookie = cookieParts.join("; ");
+    setAccessToken(access_token);
 
     const params = new URLSearchParams(window.location.search);
     const rawCallbackUrl = params.get("callbackUrl");
@@ -110,11 +99,7 @@ export function useLoginForm(allowedRoles?: string[]) {
     if (safeCallbackUrl) {
       router.replace(safeCallbackUrl);
     } else if (decoded.role === "admin") {
-      router.replace("/admin");
-    } else if (decoded.role === "mkt") {
-      router.replace("/marketing");
-    } else if (decoded.role === "hr") {
-      router.replace("/hr/dashboard");
+      router.replace("/adminPage")
     } else {
       router.replace("/");
     }
@@ -174,13 +159,14 @@ export function useLoginForm(allowedRoles?: string[]) {
     try {
       const response = await axios.post<LoginResponse>(LOGIN_URL, formData, {
         headers: { "Content-Type": "application/json" },
+        withCredentials: true,
       });
 
       const { access_token } = response.data;
       await handleAuthToken(access_token, formData.email);
     } catch (error) {
       let msg = t.networkError;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const err = error as any;
 
       if (err.message === "UNAUTHORIZED_ROLE") {

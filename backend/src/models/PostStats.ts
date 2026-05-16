@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document, Types } from 'mongoose';
+import mongoose, { Schema, Document, Types } from "mongoose";
 
 export interface IPostStats extends Document {
   id: string;
@@ -7,15 +7,17 @@ export interface IPostStats extends Document {
   likes: number;
   comments: number;
   score: number;
+  likedBy: Types.ObjectId[];
 }
 
 const postStatsSchema = new Schema<IPostStats>(
   {
     postId: {
       type: Schema.Types.ObjectId,
-      ref: 'Post',
+      ref: "Post",
       required: true,
       unique: true,
+      index: true,
     },
     views: {
       type: Number,
@@ -32,22 +34,32 @@ const postStatsSchema = new Schema<IPostStats>(
     score: {
       type: Number,
       default: 0,
+      index: true,
     },
+    likedBy: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+        default: [],
+      },
+    ],
   },
-  {
-  }
+  {},
 );
 
-postStatsSchema.virtual('id').get(function () {
+postStatsSchema.virtual("id").get(function () {
   return this._id.toString();
 });
 
-postStatsSchema.set('toJSON', {
+postStatsSchema.set("toJSON", {
   virtuals: true,
-  transform: (doc, ret:any) => {
+  transform: (doc, ret: any) => {
     delete ret._id;
     delete ret.__v;
   },
 });
 
-export const PostStats = mongoose.model<IPostStats>('PostStats', postStatsSchema);
+export const PostStats = mongoose.model<IPostStats>(
+  "PostStats",
+  postStatsSchema,
+);

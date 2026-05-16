@@ -1,21 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { PostCard } from './post-card'
-import { CreatePostModal } from './create-post-modal'
 import { TopHeader } from './top-header'
-import { Button } from '@/components/ui/button'
 import { ToastAction } from '@/components/ui/toast'
-import { Plus } from 'lucide-react'
 import {
-    getPublicPosts,
-    createPost as createPostAPI,
-    publishPost,
-    deletePost,
-    savePost,
+    getSavedPosts,
     unsavePost,
-    moveToTrash,
 } from '@/api/post.api'
 import {
     getPostStats,
@@ -26,6 +18,7 @@ import {
     createComment as createCommentAPI,
     getPostComments,
 } from '@/api/comment.api'
+
 import type { Post as PostType, Comment as CommentType } from '@/types'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/providers/auth-provider'
@@ -48,37 +41,40 @@ interface PostUIData extends PostType {
     isSaved?: boolean
 }
 
-export function PostFeed() {
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+export function SavePost() {
+
     const [posts, setPosts] = useState<PostUIData[]>([])
     const [isLoading, setIsLoading] = useState(false)
+
     const { toast } = useToast()
     const { user, isLoading: authLoading } = useAuth()
     const router = useRouter()
 
     const showTopHeader = !authLoading && !user
 
-    useEffect(() => {
-        loadPosts()
-    }, [])
+    const loadPosts = useCallback(async () => {
 
-    const loadPosts = async () => {
         try {
+
             setIsLoading(true)
-            const response = await getPublicPosts()
+
+            const response = await getSavedPosts()
             const postsData = response.posts
             const currentUserId = getUserIdFromToken()
 
-
             const postsWithStats = await Promise.all(
-                postsData.map(async (post: any) => {
-                    try {
-                        const statsData = await getPostStats(post.id)
 
+                postsData.map(async (post: any) => {
+
+                    try {
+
+                        const statsData = await getPostStats(post.id)
                         const commentsResponse = await getPostComments(post.id)
+
                         const commentsData = commentsResponse.comments
 
                         const isAnonPost = !!post.isAnonymous
+
                         const liked =
                             !!currentUserId &&
                             Array.isArray((statsData as any).likedBy) &&
@@ -87,8 +83,12 @@ export function PostFeed() {
                             )
 
                         return {
+
                             id: post.id,
-                            userId: typeof post.userId === 'string' ? post.userId : post.userId?.id || '',
+                            userId: typeof post.userId === 'string'
+                                ? post.userId
+                                : post.userId?.id || '',
+
                             title: post.title,
                             content: post.content,
                             visibility: post.visibility,
@@ -96,115 +96,111 @@ export function PostFeed() {
                             status: post.status,
                             createdAt: post.createdAt,
                             updatedAt: post.updatedAt,
+
                             author: {
-                                id: typeof post.userId === 'string' ? post.userId : post.userId?.id || '',
+
+                                id: typeof post.userId === 'string'
+                                    ? post.userId
+                                    : post.userId?.id || '',
+
                                 name: isAnonPost
                                     ? 'Ẩn danh'
                                     : (typeof post.userId === 'string'
                                         ? 'Ẩn danh'
                                         : post.userId?.name || 'Ẩn danh'),
+
                                 avatar: isAnonPost
                                     ? 'https://api.dicebear.com/9.x/avataaars/svg?seed=default'
                                     : (typeof post.userId === 'string'
                                         ? 'https://api.dicebear.com/9.x/avataaars/svg?seed=default'
-                                        : post.userId?.avatar || 'https://api.dicebear.com/9.x/avataaars/svg?seed=default'),
+                                        : post.userId?.avatar ||
+                                        'https://api.dicebear.com/9.x/avataaars/svg?seed=default'),
                             },
+
                             stats: {
                                 likes: statsData.likes || 0,
                                 comments: statsData.comments || 0,
                             },
+
                             liked,
-                            isSaved: false,
+                            isSaved: true,
+
                             comments: (commentsData || []).map((comment: any) => {
+
                                 const isAnonComment = !!comment.isAnonymous
 
-                                return ({
+                                return {
+
                                     id: comment.id,
                                     postId: comment.postId,
-                                    userId: typeof comment.userId === 'string' ? comment.userId : comment.userId?.id || '',
+
+                                    userId: typeof comment.userId === 'string'
+                                        ? comment.userId
+                                        : comment.userId?.id || '',
+
                                     content: comment.content,
                                     isAnonymous: comment.isAnonymous,
                                     createdAt: comment.createdAt,
+
                                     author: {
+
                                         name: isAnonComment
                                             ? 'Ẩn danh'
                                             : (typeof comment.userId === 'string'
                                                 ? 'Ẩn danh'
                                                 : comment.userId?.name || 'Ẩn danh'),
+
                                         avatar: isAnonComment
                                             ? 'https://api.dicebear.com/9.x/avataaars/svg?seed=default'
                                             : (typeof comment.userId === 'string'
                                                 ? 'https://api.dicebear.com/9.x/avataaars/svg?seed=default'
-                                                : comment.userId?.avatar || 'https://api.dicebear.com/9.x/avataaars/svg?seed=default'),
+                                                : comment.userId?.avatar ||
+                                                'https://api.dicebear.com/9.x/avataaars/svg?seed=default'),
                                     },
-                                })
+
+                                }
+
                             }),
+
                         }
+
                     } catch (error) {
+
                         console.error('Error loading post stats:', error)
                         return null
+
                     }
+
                 })
+
             )
 
             setPosts(postsWithStats.filter((p) => p !== null) as PostUIData[])
+
         } catch (error: any) {
+
             toast({
                 title: 'Lỗi',
                 description: error.message || 'Không thể tải bài viết',
                 variant: 'destructive',
             })
+
         } finally {
+
             setIsLoading(false)
+
         }
-    }
 
-    const handleCreatePost = async (title: string, content: string, visibility: 'PUBLIC' | 'PRIVATE', isAnonymous: boolean) => {
-        try {
-            const response = await createPostAPI({
-                title,
-                content,
-                visibility,
-                isAnonymous,
-                status: 'DRAFT',
-            })
+    }, [toast])
 
-            const newPost = response as PostType
-
-            // Create new post UI
-            const newPostUI: PostUIData = {
-                ...(newPost as any),
-                author: {
-                    id: newPost.userId,
-                    name: 'Anonymous',
-                    avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=default',
-                },
-                stats: {
-                    likes: 0,
-                    comments: 0,
-                },
-                liked: false,
-                comments: [],
-            }
-
-            setPosts([newPostUI, ...posts])
-            setIsCreateModalOpen(false)
-
-            toast({
-                title: 'Thành công',
-                description: 'Bài viết đã được tạo thành công',
-            })
-        } catch (error: any) {
-            toast({
-                title: 'Lỗi',
-                description: error.message || 'Không thể tạo bài viết',
-                variant: 'destructive',
-            })
-        }
-    }
+    useEffect(() => {
+        loadPosts()
+    }, [loadPosts])
 
     const handleLike = async (postId: string) => {
+
         if (!user && !authLoading) {
+
             toast({
                 title: 'Yêu cầu đăng nhập',
                 description: 'Vui lòng đăng nhập để thích bài viết.',
@@ -214,6 +210,7 @@ export function PostFeed() {
                     </ToastAction>
                 ),
             })
+
             return
         }
 
@@ -221,6 +218,7 @@ export function PostFeed() {
         if (!post) return
 
         try {
+
             if (post.liked) {
                 await unlikePost(postId)
             } else {
@@ -228,27 +226,40 @@ export function PostFeed() {
             }
 
             setPosts(
+
                 posts.map((p) => {
+
                     if (p.id === postId) {
+
                         return {
                             ...p,
                             liked: !p.liked,
                             stats: {
                                 ...p.stats,
-                                likes: p.liked ? p.stats.likes - 1 : p.stats.likes + 1,
+                                likes: p.liked
+                                    ? p.stats.likes - 1
+                                    : p.stats.likes + 1,
                             },
                         }
+
                     }
+
                     return p
+
                 })
+
             )
+
         } catch (error: any) {
+
             toast({
                 title: 'Lỗi',
                 description: error.message || 'Không thể thực hiện thao tác',
                 variant: 'destructive',
             })
+
         }
+
     }
 
     const handleAddComment = async (postId: string, content: string) => {
@@ -272,7 +283,6 @@ export function PostFeed() {
                 isAnonymous: false,
             })
 
-            // Reload posts to get updated comments
             loadPosts()
 
             toast({
@@ -288,154 +298,78 @@ export function PostFeed() {
         }
     }
 
-    const handleToggleVisibility = async (postId: string) => {
-        try {
-            await publishPost(postId)
-
-            // Feed chỉ hiển thị bài public, nên khi chuyển sang private thì ẩn bài khỏi danh sách
-            setPosts((prev) => prev.filter((p) => p.id !== postId))
-
-            toast({
-                title: 'Thành công',
-                description: 'Đã cập nhật quyền riêng tư của bài viết',
-            })
-        } catch (error: any) {
-            toast({
-                title: 'Lỗi',
-                description: error.message || 'Không thể đổi trạng thái bài viết',
-                variant: 'destructive',
-            })
-        }
-    }
-
-    const handleDeletePost = async (postId: string) => {
-        try {
-            await moveToTrash(postId)
-            setPosts((prev) => prev.filter((p) => p.id !== postId))
-
-            toast({
-                title: 'Thành công',
-                description: 'Bài viết đã được chuyển vào thùng rác',
-            })
-        } catch (error: any) {
-            toast({
-                title: 'Lỗi',
-                description: error.message || 'Không thể chuyển bài viết vào thùng rác',
-                variant: 'destructive',
-            })
-        }
-    }
-
     const handleSavePost = async (postId: string) => {
-        if (!user && !authLoading) {
-            toast({
-                title: 'Yêu cầu đăng nhập',
-                description: 'Vui lòng đăng nhập để lưu bài viết.',
-                action: (
-                    <ToastAction altText="Đăng nhập" onClick={() => router.push('/login')}>
-                        Đăng nhập
-                    </ToastAction>
-                ),
-            })
-            return
-        }
 
         try {
-            const post = posts.find(p => p.id === postId)
-            if (!post) return
 
-            if (post.isSaved) {
-                await unsavePost(postId)
-            } else {
-                await savePost(postId)
-            }
+            await unsavePost(postId)
 
-            setPosts(
-                posts.map((p) => {
-                    if (p.id === postId) {
-                        return {
-                            ...p,
-                            isSaved: !p.isSaved,
-                        }
-                    }
-                    return p
-                })
-            )
+            setPosts(prev => prev.filter(p => p.id !== postId))
 
             toast({
                 title: 'Thành công',
-                description: post.isSaved ? 'Đã bỏ lưu bài viết' : 'Đã lưu bài viết',
+                description: 'Đã bỏ lưu bài viết',
             })
+
         } catch (error: any) {
+
             toast({
                 title: 'Lỗi',
-                description: error.message || 'Không thể thực hiện thao tác',
+                description: error.message || 'Không thể bỏ lưu bài viết',
                 variant: 'destructive',
             })
+
         }
+
     }
 
     return (
-        <div className={`min-h-screen bg-background p-8 ${showTopHeader ? 'pt-24' : ''}`}>
-            {showTopHeader && <TopHeader />}
-            <div className="mx-auto max-w-2xl">
-                {/* Create Post Section */}
-                <Button
-                    onClick={() => {
-                        if (!user && !authLoading) {
-                            router.push('/login')
-                            return
-                        }
-                        setIsCreateModalOpen(true)
-                    }}
-                    className="mb-8 w-full gap-2"
-                    size="lg"
-                    disabled={isLoading}
-                >
-                    <Plus className="h-5 w-5" />
-                    Tạo bài viết
-                </Button>
 
-                {/* Posts List */}
+        <div className={`min-h-screen bg-background p-8 ${showTopHeader ? 'pt-24' : ''}`}>
+
+            {showTopHeader && <TopHeader />}
+
+            <div className="mx-auto max-w-2xl">
+
+                <h1 className="text-2xl font-bold mb-6">
+                    Bài viết đã lưu
+                </h1>
+
                 <div className="space-y-6">
-                    {isLoading && <p className="text-center text-muted-foreground">Đang tải bài viết...</p>}
-                    {!isLoading && posts.length === 0 && (
-                        <p className="text-center text-muted-foreground">Chưa có bài viết nào</p>
+
+                    {isLoading && (
+                        <p className="text-center text-muted-foreground">
+                            Đang tải bài viết...
+                        </p>
                     )}
+
+                    {!isLoading && posts.length === 0 && (
+                        <p className="text-center text-muted-foreground">
+                            Bạn chưa lưu bài viết nào
+                        </p>
+                    )}
+
                     {posts.map((post) => (
+
                         <PostCard
                             key={post.id}
                             post={post}
                             onLike={() => handleLike(post.id)}
                             onAddComment={(text) => handleAddComment(post.id, text)}
-                            onToggleVisibility={() => handleToggleVisibility(post.id)}
-                            onDelete={() => handleDeletePost(post.id)}
                             onSave={() => handleSavePost(post.id)}
                             isAuthenticated={!!user}
                             currentUserId={getUserIdFromToken()}
-                            isSaved={post.isSaved}
-                            onRequireLogin={() => {
-                                toast({
-                                    title: 'Yêu cầu đăng nhập',
-                                    description: 'Vui lòng đăng nhập để bình luận.',
-                                    action: (
-                                        <ToastAction altText="Đăng nhập" onClick={() => router.push('/login')}>
-                                            Đăng nhập
-                                        </ToastAction>
-                                    ),
-                                })
-                            }}
+                            isSaved={true}
                         />
+
                     ))}
+
                 </div>
+
             </div>
 
-            {/* Create Post Modal */}
-            <CreatePostModal
-                open={isCreateModalOpen}
-                onOpenChange={setIsCreateModalOpen}
-                onCreatePost={handleCreatePost}
-            />
         </div>
+
     )
+
 }

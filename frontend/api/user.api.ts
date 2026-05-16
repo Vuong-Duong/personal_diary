@@ -1,12 +1,11 @@
-import Cookies from "js-cookie";
 import { jwtDecode } from "jwt-decode";
-import { fetchWithAuth } from "./apiClient";
+import { fetchWithAuth, getAccessToken } from "./apiClient";
 import { API_ENDPOINTS } from "./apiConfig";
 import type {
   User,
   UpdateUserRequest,
   ChangePasswordRequest,
-  ApiResponse,
+  UserActivityStats,
 } from "@/types";
 
 interface JwtPayload {
@@ -14,7 +13,7 @@ interface JwtPayload {
 }
 
 export const getUserIdFromToken = (): string | null => {
-  const token = Cookies.get("token");
+  const token = getAccessToken();
   if (!token) return null;
 
   try {
@@ -30,7 +29,9 @@ export const getProfile = async (): Promise<User> => {
 };
 
 export const getAllUsers = async (): Promise<User[]> => {
-  return await fetchWithAuth(API_ENDPOINTS.USER.GET_ALL);
+  const users = await fetchWithAuth(API_ENDPOINTS.USER.GET_ALL);
+  // Chỉ hiển thị user thường, không hiển thị admin
+  return users.filter((user) => user.role !== "admin");
 };
 
 export const getUserById = async (id: string): Promise<User> => {
@@ -60,4 +61,8 @@ export const changePassword = async (
     method: "PUT",
     body: JSON.stringify(data),
   });
+};
+
+export const getUserActivityStats = async (): Promise<UserActivityStats> => {
+  return await fetchWithAuth(API_ENDPOINTS.USER.GET_ACTIVITY_STATS);
 };

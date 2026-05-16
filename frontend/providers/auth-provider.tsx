@@ -1,9 +1,13 @@
 "use client";
 
 import type React from "react";
-import Cookies from "js-cookie";
 
-import { fetchWithAuth } from "@/api/apiClient";
+import {
+  fetchWithAuth,
+  fetchWithoutAuth,
+  setAccessToken as setApiAccessToken,
+  clearAccessToken,
+} from "@/api/apiClient";
 import { API_ENDPOINTS } from "@/api/apiConfig";
 import { login as apiLogin, register as apiRegister } from "@/api/auth.api";
 import { getUserIdFromToken } from "@/api/user.api";
@@ -21,6 +25,7 @@ import {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
+  accessToken: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (
     name: string,
@@ -29,15 +34,18 @@ interface AuthContextType {
   ) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
+  refreshAccessToken: () => Promise<string | null>;
 }
 
 export const AuthContext = createContext<AuthContextType>({
   user: null,
   isLoading: true,
+  accessToken: null,
   login: async () => { },
   register: async () => { },
   logout: () => { },
   refreshUser: async () => { },
+  refreshAccessToken: async () => null,
 });
 
 export function useAuth() {
@@ -51,7 +59,7 @@ export function useAuth() {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isMounted, setIsMounted] = useState(false);
+  const [accessToken, setAccessTokenState] = useState<string | null>(null);
   const router = useRouter();
 
   const getUserFromToken = useCallback(async () => {
@@ -64,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       );
       return userData as User;
     } catch (error) {
-      // console.error("Failed to fetch user data", error)
+      console.error("Failed to fetch user data", error);
       return null;
     }
   }, []);
@@ -74,60 +82,93 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(userData);
   }, [getUserFromToken]);
 
+  /**
+   * Refresh access token using refresh token from httpOnly cookie
+   */
+  const refreshAccessToken = useCallback(async () => {
+    try {
+      const response = await fetchWithoutAuth(API_ENDPOINTS.AUTH.REFRESH_TOKEN, {
+        method: "POST",
+        body: JSON.stringify({}),
+      }) as { access_token: string };
+
+      if (response.access_token) {
+        setApiAccessToken(response.access_token);
+        setAccessTokenState(response.access_token);
+        return response.access_token;
+      }
+    } catch (error) {
+      console.error("Failed to refresh access token", error);
+      clearAccessToken();
+      setAccessTokenState(null);
+      setUser(null);
+      return null;
+    }
+  }, []);
+
   // chỉ chạy 1 lần khi component mount
   useEffect(() => {
-    setIsMounted(true);
-
-    // Check if user is logged in on initial load using cookies
+    // Check if user is logged in on initial load using the httpOnly refresh cookie.
     const checkAuth = async () => {
       try {
-        const userData = await getUserFromToken();
-        setUser(userData);
+        // Try to refresh token on app load to get new access token
+        const newToken = await refreshAccessToken();
+        if (newToken) {
+          const userData = await getUserFromToken();
+          setUser(userData);
+        }
       } catch (error) {
-        // console.error("Auth check failed", error)
+        console.error("Auth check failed", error);
       } finally {
         setIsLoading(false);
       }
     };
 
     checkAuth();
-  }, [getUserFromToken]); // dependency getUserFromToken (đã được memoize)
+  }, [getUserFromToken, refreshAccessToken]);
 
   const login = useCallback(
     async (email: string, password: string) => {
       const response = await apiLogin({ email, password });
-      // Store token from response
-      Cookies.set("token", response.token, { expires: 7 });
+      setApiAccessToken(response.access_token);
+      setAccessTokenState(response.access_token);
       const userData = await getUserFromToken();
       setUser(userData);
-      router.push("/home");
+      router.push("/");
     },
     [getUserFromToken, router]
   );
 
   const register = useCallback(
-    async (
-      name: string,
-      email: string,
-      password: string,
-    ) => {
+    async (name: string, email: string, password: string) => {
       await apiRegister({ name, email, password });
-      // Register doesn't return a token, user needs to verify email first
-      // No need to fetch user data or set user at this point
     },
     []
   );
 
   const logout = useCallback(() => {
-    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT;";
+    // Call logout API to revoke tokens
+    if (accessToken) {
+      fetchWithAuth(API_ENDPOINTS.AUTH.LOGOUT, {
+        method: "POST",
+      }).catch((error) => {
+        console.error("Logout API call failed", error);
+      });
+    }
+
+    // Clear local state and token
+    clearAccessToken();
+    setAccessTokenState(null);
     setUser(null);
+
     window.dispatchEvent(new CustomEvent("logout"));
     window.dispatchEvent(new CustomEvent("authChange"));
-  }, []);
+    router.push("/login");
+  }, [accessToken, router]);
 
   const contextValue = useMemo(
-    () => ({ user, isLoading, login, register, logout, refreshUser }),
-    [user, isLoading, login, register, logout, refreshUser]
+    () => ({ user, isLoading, login, register, logout, refreshUser, accessToken, refreshAccessToken }),
+    [user, isLoading, login, register, logout, refreshUser, accessToken, refreshAccessToken]
   );
 
   return (

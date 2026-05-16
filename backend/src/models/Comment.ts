@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document, Types } from 'mongoose';
+import mongoose, { Schema, Document, Types } from "mongoose";
 
 export interface IComment extends Document {
   id: string;
@@ -13,13 +13,15 @@ const commentSchema = new Schema<IComment>(
   {
     postId: {
       type: Schema.Types.ObjectId,
-      ref: 'Post',
+      ref: "Post",
       required: true,
+      index: true, // Index for finding comments by post
     },
     userId: {
       type: Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       required: true,
+      index: true, // Index for finding comments by user
     },
     content: {
       type: String,
@@ -32,19 +34,22 @@ const commentSchema = new Schema<IComment>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
-commentSchema.virtual('id').get(function () {
+// Compound indexes for common queries
+commentSchema.index({ postId: 1, createdAt: -1 }); // Comments on a post sorted by date
+
+commentSchema.virtual("id").get(function () {
   return this._id.toString();
 });
 
-commentSchema.set('toJSON', {
+commentSchema.set("toJSON", {
   virtuals: true,
-  transform: (doc, ret:any) => {
+  transform: (doc, ret: any) => {
     delete ret._id;
     delete ret.__v;
   },
 });
 
-export const Comment = mongoose.model<IComment>('Comment', commentSchema);
+export const Comment = mongoose.model<IComment>("Comment", commentSchema);

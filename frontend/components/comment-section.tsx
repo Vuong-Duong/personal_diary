@@ -10,14 +10,21 @@ import type { Comment as CommentType } from '@/types'
 interface CommentSectionProps {
     comments: CommentType[]
     onAddComment: (text: string) => void
+    isAuthenticated?: boolean
+    onRequireLogin?: () => void
 }
 
-export function CommentSection({ comments, onAddComment }: CommentSectionProps) {
+export function CommentSection({ comments, onAddComment, isAuthenticated = true, onRequireLogin }: CommentSectionProps) {
     const [commentText, setCommentText] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        if (!isAuthenticated) {
+            onRequireLogin?.()
+            return
+        }
+
         if (commentText.trim()) {
             setIsSubmitting(true)
             try {

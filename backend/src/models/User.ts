@@ -29,6 +29,7 @@ const userSchema = new Schema<IUser>(
       type: String,
       required: true,
       unique: true,
+      index: true,
       lowercase: true,
       trim: true,
     },
@@ -48,11 +49,12 @@ const userSchema = new Schema<IUser>(
       type: String,
       enum: ["user", "admin"],
       default: "user",
+      index: true, // Index for role-based queries
     },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 /**
@@ -69,7 +71,7 @@ userSchema.pre("save", async function () {
  * So sánh password khi login
  */
 userSchema.methods.comparePassword = async function (
-  candidatePassword: string
+  candidatePassword: string,
 ): Promise<boolean> {
   return bcrypt.compare(candidatePassword, this.password);
 };
@@ -96,7 +98,4 @@ userSchema.set("toJSON", {
 /**
  * Export Model
  */
-export const User: Model<IUser> = mongoose.model<IUser>(
-  "User",
-  userSchema
-);
+export const User: Model<IUser> = mongoose.model<IUser>("User", userSchema);

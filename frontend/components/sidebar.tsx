@@ -2,9 +2,11 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Lock, User, LogOut, BookOpen } from 'lucide-react'
+import { Home, Lock, User, LogOut, Trash, BookOpen } from 'lucide-react'
+import { useAuth } from '@/providers/auth-provider'
 
 export function Sidebar() {
+    const { user, isLoading, logout } = useAuth()
     const pathname = usePathname()
 
     const navItems = [
@@ -23,6 +25,16 @@ export function Sidebar() {
             href: '/profile',
             icon: User,
         },
+        {
+            name: 'Saved Posts',
+            href: '/savePost',
+            icon: BookOpen,
+        },
+        {
+            name: 'Trash',
+            href: '/history',
+            icon: Trash,
+        },
     ]
 
     const isActive = (href: string) => {
@@ -30,6 +42,11 @@ export function Sidebar() {
             return pathname === '/'
         }
         return pathname.startsWith(href)
+    }
+
+    // và chỉ hiển thị cho user thường, không hiển thị cho admin
+    if (isLoading || !user || user.role === 'admin') {
+        return null
     }
 
     return (
@@ -74,7 +91,11 @@ export function Sidebar() {
             </nav>
 
             {/* Logout Button */}
-            <button className="flex items-center gap-4 px-4 py-3 rounded-lg text-neutral-700 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-all duration-200 w-full text-base">
+            <button
+                type="button"
+                onClick={logout}
+                className="flex items-center gap-4 px-4 py-3 rounded-lg text-neutral-700 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-all duration-200 w-full text-base"
+            >
                 <LogOut className="w-6 h-6" />
                 <span className="font-normal">Logout</span>
             </button>

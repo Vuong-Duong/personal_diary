@@ -267,75 +267,75 @@ const StyledLink = styled(Link)`
 `;
 
 export default function LoginPage() {
-    const {
-        formData,
-        showPassword,
-        error,
-        isLoading,
-        t,
-        handleInputChange,
-        handleSubmit,
-        setShowPassword,
-    } = useLoginForm(["user"]);
+  const {
+    formData,
+    showPassword,
+    error,
+    isLoading,
+    t,
+    handleInputChange,
+    handleSubmit,
+    setShowPassword,
+  } = useLoginForm(["admin"]);
 
 
 
-    return (
-        <LoginWrapper>
-            <LoginContainer>
-                <LogoSide>
-                    <ImageWrapper>
-                        <Image
-                            src="https://static.vecteezy.com/system/resources/previews/006/549/272/original/diary-life-or-story-life-logo-quill-signature-feather-pen-ink-logo-symbol-free-vector.jpg"
-                            alt="Logo"
-                            fill
-                            style={{ objectFit: "contain" }}
-                            priority
-                        />
-                    </ImageWrapper>
-                </LogoSide>
+  return (
+    <LoginWrapper>
+      <LoginContainer>
+        <LogoSide>
+          <ImageWrapper>
+            <Image
+              src="https://static.vecteezy.com/system/resources/previews/006/549/272/original/diary-life-or-story-life-logo-quill-signature-feather-pen-ink-logo-symbol-free-vector.jpg"
+              alt="Logo"
+              fill
+              style={{ objectFit: "contain" }}
+              priority
+            />
+          </ImageWrapper>
+        </LogoSide>
 
-                <FormSide>
-                    <LoginForm onSubmit={handleSubmit}>
-                        <Title>{t.title}</Title>
+        <FormSide>
+          <LoginForm onSubmit={handleSubmit}>
+            <Title>{t.title}</Title>
 
-                        <div>
-                            <Label>{t.email}</Label>
-                            <Input
-                                type="text"
-                                id="email"
-                                placeholder={t.emailPlaceholder}
-                                value={formData.email}
-                                onChange={handleInputChange}
-                                disabled={isLoading}
-                                style={{ backgroundColor: "#f5f5f5" }}
-                            />
-                        </div>
+            <div>
+              <Label>{t.email}</Label>
+              <Input
+                type="text"
+                id="email"
+                placeholder={t.emailPlaceholder}
+                value={formData.email}
+                onChange={handleInputChange}
+                disabled={isLoading}
+                style={{ backgroundColor: "#f5f5f5" }}
+              />
+            </div>
 
-                        <PasswordWrapper>
-                            <Label>{t.password}</Label>
-                            <Input
-                                type={showPassword ? "text" : "password"}
-                                id="password"
-                                placeholder={t.passwordPlaceholder}
-                                value={formData.password}
-                                onChange={handleInputChange}
-                                disabled={isLoading}
-                                style={{ backgroundColor: "#f5f5f5" }}
-                            />
-                            <EyeIcon onClick={() => setShowPassword(!showPassword)}>
-                                {showPassword ? <FaEyeSlash /> : <FaEye />}
-                            </EyeIcon>
-                        </PasswordWrapper>
+            <PasswordWrapper>
+              <Label>{t.password}</Label>
+              <Input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                placeholder={t.passwordPlaceholder}
+                value={formData.password}
+                onChange={handleInputChange}
+                disabled={isLoading}
+                style={{ backgroundColor: "#f5f5f5" }}
+              />
+              <EyeIcon onClick={() => setShowPassword(!showPassword)}>
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </EyeIcon>
+            </PasswordWrapper>
 
-                        {error && <ErrorMessage>{error}</ErrorMessage>}
+            {error && <ErrorMessage>{error}</ErrorMessage>}
 
-                        <SubmitButton type="submit" disabled={isLoading}>
-                            {isLoading ? "Đang tải..." : t.loginButton}
-                        </SubmitButton>
-                    </LoginForm>
-                </FormSide>
-            </LoginContainer>
-        </LoginWrapper>
-    );
+            <SubmitButton type="submit" disabled={isLoading}>
+              {isLoading ? "Đang tải..." : t.loginButton}
+            </SubmitButton>
+          </LoginForm>
+        </FormSide>
+      </LoginContainer>
+    </LoginWrapper>
+  );
 }

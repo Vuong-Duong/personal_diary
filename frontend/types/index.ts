@@ -106,3 +106,9 @@ export interface ApiResponse<T = unknown> {
   message: string;
   data?: T;
 }
+
+export interface UserActivityStats {
+  totalLikesReceived: number;
+  totalCommentsReceived: number;
+  totalPrivatePosts: number;
+}

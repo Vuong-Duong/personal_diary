@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Edit2, Heart, MessageCircle, Lock } from 'lucide-react'
+import { Edit2, Heart, MessageCircle, Lock, KeyRound } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
@@ -16,22 +16,25 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { getProfile, updateUser } from '@/api/user.api'
+import { getProfile, updateUser, getUserActivityStats } from '@/api/user.api'
 import { getUserPosts } from '@/api/post.api'
 import type { User } from '@/types'
 import { useToast } from '@/hooks/use-toast'
+import { ChangePasswordModal } from './change-password-modal'
 
 interface UserWithStats extends User {
     stats?: {
         posts: number
-        followers: number
-        following: number
+        totalLikesReceived: number
+        totalCommentsReceived: number
+        totalPrivatePosts: number
     }
 }
 
 export function UserProfile() {
     const [user, setUser] = useState<UserWithStats | null>(null)
     const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
     const [isSaving, setIsSaving] = useState(false)
     const [formData, setFormData] = useState({
@@ -48,21 +51,28 @@ export function UserProfile() {
             setIsLoading(true)
             const userData = await getProfile()
 
-            // Try to get user posts count
+            // Try to get user posts count & activity stats
             let postsCount = 0
+            let activityStats = {
+                totalLikesReceived: 0,
+                totalCommentsReceived: 0,
+                totalPrivatePosts: 0,
+            }
             try {
                 const postsResponse = await getUserPosts(userData.id)
                 postsCount = (postsResponse.posts || []).length
+                activityStats = await getUserActivityStats()
             } catch (error) {
-                console.warn('Could not fetch user posts count')
+                console.warn('Could not fetch user stats')
             }
 
             const userWithStats: UserWithStats = {
                 ...userData,
                 stats: {
                     posts: postsCount,
-                    followers: 0,
-                    following: 0,
+                    totalLikesReceived: activityStats.totalLikesReceived,
+                    totalCommentsReceived: activityStats.totalCommentsReceived,
+                    totalPrivatePosts: activityStats.totalPrivatePosts,
                 },
             }
 
@@ -151,43 +161,56 @@ export function UserProfile() {
                                 <AvatarImage src={user.avatar || ''} alt={user.name} />
                                 <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                             </Avatar>
-                            <Button
-                                onClick={() => {
-                                    setFormData({ name: user.name })
-                                    setIsEditModalOpen(true)
-                                }}
-                                className="gap-2"
-                            >
-                                <Edit2 className="h-4 w-4" />
-                                Chỉnh sửa hồ sơ
-                            </Button>
+                            <div className="flex flex-col gap-2">
+                                <Button
+                                    onClick={() => {
+                                        setFormData({ name: user.name })
+                                        setIsEditModalOpen(true)
+                                    }}
+                                    className="gap-2"
+                                >
+                                    <Edit2 className="h-4 w-4" />
+                                    Chỉnh sửa hồ sơ
+                                </Button>
+
+                            </div>
                         </div>
 
                         {/* User Info */}
                         <div className="mb-6">
                             <h1 className="text-2xl font-bold text-card-foreground">{user.name}</h1>
                             <p className="text-muted-foreground">{user.email}</p>
+                            <div className="mb-6 flex justify-end">
+                                <Button
+                                    onClick={() => setIsPasswordModalOpen(true)}
+                                    variant="outline"
+                                    className="gap-2"
+                                >
+                                    <KeyRound className="h-4 w-4" />
+                                    Đổi mật khẩu
+                                </Button>
+                            </div>
                         </div>
 
                         {/* Stats */}
                         <div className="grid grid-cols-3 gap-4 border-t border-border pt-6">
                             <div className="text-center">
                                 <p className="text-2xl font-bold text-card-foreground">
-                                    {user.stats?.posts || 0}
+                                    {user.stats?.posts ?? 0}
                                 </p>
                                 <p className="text-sm text-muted-foreground">Bài viết</p>
                             </div>
                             <div className="text-center">
                                 <p className="text-2xl font-bold text-card-foreground">
-                                    {user.stats?.followers || 0}
+                                    {user.stats?.totalLikesReceived ?? 0}
                                 </p>
-                                <p className="text-sm text-muted-foreground">Followers</p>
+                                <p className="text-sm text-muted-foreground">Lượt thích nhận được</p>
                             </div>
                             <div className="text-center">
                                 <p className="text-2xl font-bold text-card-foreground">
-                                    {user.stats?.following || 0}
+                                    {user.stats?.totalCommentsReceived ?? 0}
                                 </p>
-                                <p className="text-sm text-muted-foreground">Đang theo dõi</p>
+                                <p className="text-sm text-muted-foreground">Bình luận nhận được</p>
                             </div>
                         </div>
                     </div>
@@ -205,21 +228,27 @@ export function UserProfile() {
                                     <Heart className="h-5 w-5 text-primary" />
                                     <span className="text-card-foreground">Tổng lượt thích nhận được</span>
                                 </div>
-                                <span className="font-semibold text-card-foreground">0</span>
+                                <span className="font-semibold text-card-foreground">
+                                    {user.stats?.totalLikesReceived ?? 0}
+                                </span>
                             </div>
                             <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                                 <div className="flex items-center gap-3">
                                     <MessageCircle className="h-5 w-5 text-accent" />
                                     <span className="text-card-foreground">Tổng bình luận nhận được</span>
                                 </div>
-                                <span className="font-semibold text-card-foreground">0</span>
+                                <span className="font-semibold text-card-foreground">
+                                    {user.stats?.totalCommentsReceived ?? 0}
+                                </span>
                             </div>
                             <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                                 <div className="flex items-center gap-3">
                                     <Lock className="h-5 w-5 text-muted-foreground" />
                                     <span className="text-card-foreground">Bài viết riêng tư</span>
                                 </div>
-                                <span className="font-semibold text-card-foreground">0</span>
+                                <span className="font-semibold text-card-foreground">
+                                    {user.stats?.totalPrivatePosts ?? 0}
+                                </span>
                             </div>
                         </div>
                     </Card>
@@ -263,6 +292,10 @@ export function UserProfile() {
                     </form>
                 </DialogContent>
             </Dialog>
+            <ChangePasswordModal
+                open={isPasswordModalOpen}
+                onOpenChange={setIsPasswordModalOpen}
+            />
         </div>
     )
 }

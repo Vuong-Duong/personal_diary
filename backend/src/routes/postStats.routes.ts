@@ -6,23 +6,18 @@ import {
   unlikePost,
   getTopPosts,
   getTrendingPosts,
-  updatePostScore,
 } from "../controllers/postStats.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
-import { requireRole } from "../middlewares/role.middlewares";
 
 const router = express.Router();
 
 // Public routes
-router.get("/:postId", getPostStats);
 router.get("/trending", getTrendingPosts);
 router.get("/top", getTopPosts);
+router.get("/:postId", getPostStats);
 
 // Protected routes (require auth)
 router.post("/:postId/like", authMiddleware, likePost);
 router.post("/:postId/unlike", authMiddleware, unlikePost);
-
-// Admin only routes
-router.put("/:postId/score", authMiddleware, requireRole(["admin"]), updatePostScore);
 
 export default router;

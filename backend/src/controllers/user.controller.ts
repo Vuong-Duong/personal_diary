@@ -1,6 +1,6 @@
 // src/controllers/user.controller.ts
 import { Response } from "express";
-import { User } from "../models";
+import { User, Post, PostStats } from "../models";
 import { AuthRequest } from "../middlewares/auth.middleware";
 
 /**
@@ -132,6 +132,54 @@ export const deleteUser = async (req: AuthRequest, res: Response) => {
     }
 
     res.json({ message: "User deleted successfully" });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ * Get current user's activity stats
+ * - Total likes received on all posts
+ * - Total comments received on all posts
+ * - Total private posts (including drafts)
+ */
+export const getUserActivityStats = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    // Get all posts by user
+    const userPosts = await Post.find({ userId });
+    const postIds = userPosts.map((p) => p._id);
+
+    let totalLikesReceived = 0;
+    let totalCommentsReceived = 0;
+
+    if (postIds.length > 0) {
+      const stats = await PostStats.find({ postId: { $in: postIds } });
+
+      stats.forEach((s) => {
+        totalLikesReceived += s.likes || 0;
+        totalCommentsReceived += s.comments || 0;
+      });
+    }
+
+    const totalPrivatePosts = await Post.countDocuments({
+      userId,
+      $or: [{ visibility: "PRIVATE" }, { status: "DRAFT" }],
+    });
+
+    res.json({
+      totalLikesReceived,
+      totalCommentsReceived,
+      totalPrivatePosts,
+    });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

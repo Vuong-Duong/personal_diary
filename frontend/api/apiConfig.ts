@@ -9,6 +9,8 @@ export const API_ENDPOINTS = {
   AUTH: {
     REGISTER: "/auth/register",
     LOGIN: "/auth/login",
+    REFRESH_TOKEN: "/auth/refresh-token",
+    LOGOUT: "/auth/logout",
   },
 
   // === USER ===
@@ -16,6 +18,7 @@ export const API_ENDPOINTS = {
     GET_PROFILE: "/users",
     UPDATE_PROFILE: "/users",
     CHANGE_PASSWORD: "/users/password",
+    GET_ACTIVITY_STATS: "/users/stats/activity",
     GET_BY_ID: (id: string) => `/users/${id}`,
     GET_ALL: "/users/admin/users",
     DELETE: (id: string) => `/users/${id}`,
@@ -24,12 +27,18 @@ export const API_ENDPOINTS = {
   // === POST ===
   POST: {
     GET_ALL: "/posts",
+    GET_PUBLIC: "/posts/public",
     CREATE: "/posts",
     GET_BY_ID: (id: string) => `/posts/${id}`,
     UPDATE: (id: string) => `/posts/${id}`,
     DELETE: (id: string) => `/posts/${id}`,
-    PUBLISH: (id: string) => `/posts/${id}/publish`,
+    PUBLISH: (id: string) => `/posts/${id}`,
     GET_USER_POSTS: (userId: string) => `/posts/user/${userId}`,
+    SAVE: (id: string) => `/posts/${id}/save`,
+    UNSAVE: (id: string) => `/posts/${id}/save`,
+    GET_SAVED: "/posts/saved",
+    MOVE_TO_TRASH: (id: string) => `/posts/${id}/trash`,
+    GET_DELETED: "/posts/deleted",
   },
 
   // === COMMENT ===

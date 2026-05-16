@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Trash2, Eye, EyeOff } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Trash2, Eye, EyeOff, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
@@ -14,7 +14,7 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { getUserIdFromToken } from '@/api/user.api'
-import { deletePost, updatePost, getUserPosts } from '@/api/post.api'
+import { publishPost, getUserPosts, createPost as createPostAPI, moveToTrash } from '@/api/post.api'
 import type { Post } from '@/types'
 import { useToast } from '@/hooks/use-toast'
 
@@ -24,15 +24,19 @@ interface PrivatePost extends Post {
 
 export function PrivatePosts() {
     const [posts, setPosts] = useState<PrivatePost[]>([])
+    const [isCreating, setIsCreating] = useState(false)
+    const [newTitle, setNewTitle] = useState('')
+    const [newContent, setNewContent] = useState('')
     const [deleteId, setDeleteId] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const { toast } = useToast()
 
     useEffect(() => {
         loadPrivatePosts()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
-    const loadPrivatePosts = async () => {
+    const loadPrivatePosts = useCallback(async () => {
         try {
             setIsLoading(true)
             const userId = getUserIdFromToken()
@@ -63,22 +67,68 @@ export function PrivatePosts() {
         } finally {
             setIsLoading(false)
         }
+    }, [toast])
+
+    const handleCreatePrivatePost = async (e: React.FormEvent) => {
+        e.preventDefault()
+
+        if (!newTitle.trim() || !newContent.trim()) {
+            toast({
+                title: 'Lỗi',
+                description: 'Vui lòng nhập tiêu đề và nội dung',
+                variant: 'destructive',
+            })
+            return
+        }
+
+        try {
+            setIsCreating(true)
+            const created = await createPostAPI({
+                title: newTitle.trim(),
+                content: newContent.trim(),
+                visibility: 'PRIVATE',
+                isAnonymous: false,
+                status: 'DRAFT',
+            })
+
+            // Thêm bài viết mới lên đầu danh sách
+            setPosts((prev) => [
+                created as PrivatePost,
+                ...prev,
+            ])
+
+            setNewTitle('')
+            setNewContent('')
+
+            toast({
+                title: 'Thành công',
+                description: 'Đã tạo bài viết riêng tư',
+            })
+        } catch (error: any) {
+            toast({
+                title: 'Lỗi',
+                description: error.message || 'Không thể tạo bài viết',
+                variant: 'destructive',
+            })
+        } finally {
+            setIsCreating(false)
+        }
     }
 
     const handleDelete = async (id: string) => {
         try {
-            await deletePost(id)
+            await moveToTrash(id)
             setPosts(posts.filter((post) => post.id !== id))
             setDeleteId(null)
 
             toast({
                 title: 'Thành công',
-                description: 'Bài viết đã được xóa',
+                description: 'Bài viết đã được chuyển vào thùng rác',
             })
         } catch (error: any) {
             toast({
                 title: 'Lỗi',
-                description: error.message || 'Không thể xóa bài viết',
+                description: error.message || 'Không thể chuyển bài viết vào thùng rác',
                 variant: 'destructive',
             })
         }
@@ -89,17 +139,15 @@ export function PrivatePosts() {
         if (!post) return
 
         try {
-            const newVisibility = post.visibility === 'PRIVATE' ? 'PUBLIC' : 'PRIVATE'
-            await updatePost(id, {
-                visibility: newVisibility as 'PRIVATE' | 'PUBLIC',
-            })
+            const updated = await publishPost(id)
 
             setPosts(
                 posts.map((p) => {
                     if (p.id === id) {
                         return {
                             ...p,
-                            visibility: newVisibility as 'PRIVATE' | 'PUBLIC',
+                            visibility: updated.visibility,
+                            status: updated.status,
                         }
                     }
                     return p
@@ -108,7 +156,7 @@ export function PrivatePosts() {
 
             toast({
                 title: 'Thành công',
-                description: `Bài viết đã được đổi thành ${newVisibility === 'PRIVATE' ? 'riêng tư' : 'công khai'}`,
+                description: `Bài viết đã được đổi thành ${updated.visibility === 'PRIVATE' ? 'riêng tư' : 'công khai'}`,
             })
         } catch (error: any) {
             toast({
@@ -137,9 +185,44 @@ export function PrivatePosts() {
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-foreground">Bài viết cá nhân</h1>
                     <p className="text-muted-foreground mt-2">
-                        Quản lý bài viết riêng tư của bạn
+                        Quản lý và tạo bài viết riêng tư của bạn
                     </p>
                 </div>
+
+                {/* Create Private Post */}
+                <Card className="bg-card p-6 mb-8">
+                    <form onSubmit={handleCreatePrivatePost} className="space-y-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <h2 className="text-lg font-semibold text-card-foreground">
+                                Tạo bài viết riêng tư
+                            </h2>
+                            <span className="inline-flex items-center gap-1 bg-accent/10 text-accent px-3 py-1 rounded-full text-xs font-medium">
+                                <EyeOff className="h-3 w-3" />
+                                Chỉ mình tôi
+                            </span>
+                        </div>
+                        <textarea
+                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 min-h-[42px]"
+                            placeholder="Tiêu đề..."
+                            value={newTitle}
+                            onChange={(e) => setNewTitle(e.target.value)}
+                        />
+                        <textarea
+                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 min-h-[120px]"
+                            placeholder="Nội dung..."
+                            value={newContent}
+                            onChange={(e) => setNewContent(e.target.value)}
+                        />
+                        <Button
+                            type="submit"
+                            className="w-full gap-2"
+                            disabled={isCreating}
+                        >
+                            <Plus className="h-4 w-4" />
+                            {isCreating ? 'Đang tạo...' : 'Tạo bài viết riêng tư'}
+                        </Button>
+                    </form>
+                </Card>
 
                 {/* Posts List */}
                 {isLoading ? (
@@ -224,9 +307,9 @@ export function PrivatePosts() {
             <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Xóa bài viết?</AlertDialogTitle>
+                        <AlertDialogTitle>Chuyển vào thùng rác?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Hành động này không thể hoàn tác. Bài viết sẽ bị xóa vĩnh viễn.
+                            Bài viết sẽ được chuyển vào thùng rác và tự động xóa sau 30 ngày.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogCancel>Hủy</AlertDialogCancel>
@@ -234,7 +317,7 @@ export function PrivatePosts() {
                         onClick={() => deleteId && handleDelete(deleteId)}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
-                        Xóa
+                        Chuyển vào thùng rác
                     </AlertDialogAction>
                 </AlertDialogContent>
             </AlertDialog>
